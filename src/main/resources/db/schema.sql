@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS counter (
+    id INTEGER PRIMARY KEY,
+    count INTEGER NOT NULL,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS counter_backup (
+    id INTEGER PRIMARY KEY,
+    count INTEGER NOT NULL,
+    name TEXT NOT NULL
+);
