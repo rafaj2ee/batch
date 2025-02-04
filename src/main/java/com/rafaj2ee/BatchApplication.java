@@ -34,7 +34,7 @@ public class BatchApplication {
             JobExecution execution = jobLauncher.run(job, jobParameters);
             log.info("Start Date "+execution.getCreateTime()+" End Date "+execution.getEndTime());
             execution.getStepExecutions().forEach(stepExecution -> {
-                log.info("Read count: " + stepExecution.getReadCount() + " Write count: "+ stepExecution.getWriteCount() + " Commit count "+stepExecution.getCommitCount());
+                log.info("Summary "+stepExecution.getSummary());
             });
 
             System.exit(SpringBatchExitCode.getExitCode(execution));
