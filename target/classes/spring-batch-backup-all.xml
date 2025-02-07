@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <context:property-placeholder location="classpath:application.properties" />
+    <context:component-scan base-package="com.rafaj2ee.tasklet" />
+
+    <!-- Configuração do DataSource -->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+        <property name="driverClass" value="${spring.datasource.driver-class-name}" />
+        <property name="url" value="${spring.datasource.url}" />
+    </bean>
+
+    <!-- Configuração do Batch -->
+    <bean id="transactionManager" 
+        class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+    <bean id="jobRepository" 
+        class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager" />
+    </bean>
+
+    <bean id="jobLauncher"
+        class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+
+    <!-- Job Principal -->
+	<!-- Altere o id do job para startJob -->
+	<batch:job id="startJob">
+	    <batch:step id="backupAllTablesStep">
+	        <batch:tasklet ref="databaseBackupTasklet" />
+	    </batch:step>
+	</batch:job>
+
+    <!-- Tasklet de Backup com novo pacote -->
+    <bean id="databaseBackupTasklet" class="com.rafaj2ee.tasklet.DatabaseBackupTasklet">
+        <property name="dataSource" ref="dataSource" />
+        <property name="backupSuffix" value="_backup" />
+    </bean>
+
+    <!-- Configurações Adicionais -->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+</beans>

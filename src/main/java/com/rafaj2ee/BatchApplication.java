@@ -15,18 +15,23 @@ import lombok.extern.slf4j.Slf4j;
 public class BatchApplication {
 
     public static void main(String[] args) throws Exception {
-        try (ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
-                "spring-batch.xml")) {
+    	String xml =  "spring-batch.xml";
+		if(args.length > 0 ) {
+			xml = args[0];
+		}
+        try (ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(xml)) {
             
             JobLauncher jobLauncher = context.getBean(JobLauncher.class);
-            Job job = context.getBean("counterBackupJob", Job.class);
+            Job job = context.getBean("startJob", Job.class);
             
             JobParametersBuilder parametersBuilder = new JobParametersBuilder();
 
             if(args.length > 0 ) {
             	for(String argument : args) {
-            		String argumentArray[] = argument.split("=");
-            		parametersBuilder.addString(argumentArray[0], argumentArray[1]);
+            		if(argument.indexOf("=")!=-1) {
+	            		String argumentArray[] = argument.split("=");
+	            		parametersBuilder.addString(argumentArray[0], argumentArray[1]); 
+            		}
             	}
             }
             JobParameters jobParameters = parametersBuilder.toJobParameters();

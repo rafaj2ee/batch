@@ -34,7 +34,7 @@
 
     <!-- Configuração do Partitioner -->
     <bean id="rangePartitioner" class="com.rafaj2ee.partitioner.RangePartitioner">
-        <property name="size" value="5000000" />
+        <property name="size" value="10000000" />
     </bean>
 
     <!-- Configuração do Tasklet -->
@@ -56,7 +56,7 @@
     <bean id="partitionHandler" class="org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler">
         <property name="taskExecutor" ref="taskExecutor" />
         <property name="step" ref="slaveStep" />
-        <property name="gridSize" value="5" />
+        <property name="gridSize" value="10" />
     </bean>
 
     <!-- Step Escravo -->

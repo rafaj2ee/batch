@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:batch="http://www.springframework.org/schema/batch"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                        http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd">
+
+    <context:property-placeholder location="classpath:application.properties" />
+    <context:component-scan base-package="com.rafaj2ee" />
+
+    <!-- DataSource Configuration -->
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+        <property name="driverClass" value="${spring.datasource.driver-class-name}" />
+        <property name="url" value="${spring.datasource.url}" />
+    </bean>
+
+    <!-- Batch Infrastructure -->
+    <bean id="transactionManager" 
+        class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+    <bean id="jobRepository" 
+        class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager" />
+    </bean>
+
+    <bean id="jobLauncher"
+        class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+
+    <!-- Main Job Configuration -->
+    <batch:job id="startJob">
+        <batch:step id="masterStep" next="cleanupStep">
+            <batch:partition step="backupStep" partitioner="tablePartitioner">
+                <batch:handler grid-size="5" task-executor="taskExecutor"/>
+            </batch:partition>
+        </batch:step>
+        <batch:step id="cleanupStep">
+            <batch:tasklet ref="cleanupTasklet"/>
+        </batch:step>
+    </batch:job>
+
+    <!-- Partition Configuration -->
+    <bean id="tablePartitioner" class="com.rafaj2ee.partitioner.TablePartitioner">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
+
+
+<!--     Remova o task executor e ajuste o grid-size -->
+<!--	<batch:partition step="backupStep" partitioner="tablePartitioner">-->
+<!--	    <batch:handler grid-size="1"/>-->
+<!--	</batch:partition>-->
+    <!-- Slave Step Configuration -->
+    <batch:step id="backupStep">
+        <batch:tasklet>
+            <batch:chunk reader="tableReader" writer="tableWriter" commit-interval="${spring.batch.commit.interval}"/>
+        </batch:tasklet>
+    </batch:step>
+
+    <!-- Reader/Writer Configuration -->
+    <bean id="tableReader" class="org.springframework.batch.item.database.JdbcCursorItemReader" scope="step">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="sql" value="SELECT * FROM #{stepExecutionContext['tableName']}"/>
+        <property name="rowMapper">
+            <bean class="org.springframework.jdbc.core.ColumnMapRowMapper"/>
+        </property>
+    </bean>
+
+	<!-- Atualize a definição do writer -->
+	<bean id="tableWriter" class="com.rafaj2ee.writer.DynamicTableWriter" scope="step">
+	    <property name="dataSource" ref="dataSource"/>
+	    <property name="tableName" value="#{stepExecutionContext['backupTable']}"/>
+	    <property name="originalTable" value="#{stepExecutionContext['tableName']}"/>
+	</bean>
+
+    <!-- Cleanup Tasklet -->
+    <bean id="cleanupTasklet" class="com.rafaj2ee.tasklet.BackupCleanupTasklet">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+</beans>
